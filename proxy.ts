@@ -1,7 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/signup"];
-const PUBLIC_API_PREFIXES = ["/api/auth/", "/_next/", "/favicon"];
+const PUBLIC_API_PREFIXES = [
+  "/api/auth/",
+  "/api/csms/network-status",
+  "/_next/",
+  "/favicon",
+];
 
 export function proxy(req: NextRequest) {
   const authEnabled = process.env.EVOLVE_AUTH_MODE === "enabled";
@@ -11,6 +16,11 @@ export function proxy(req: NextRequest) {
 
   if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next();
   if (PUBLIC_API_PREFIXES.some((p) => pathname.startsWith(p))) return NextResponse.next();
+
+  // Any file with a static extension is public (images, fonts, etc.)
+  if (/\.(jpeg|jpg|png|gif|webp|svg|ico|woff2?|ttf|otf)$/i.test(pathname)) {
+    return NextResponse.next();
+  }
 
   const sessionCookie = req.cookies.get("evolve_session");
   if (!sessionCookie) {

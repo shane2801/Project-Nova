@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  passwordHash String?
+  name        String
+  rfidTag     String    @unique
+  role        String    @default("user")
+  department  String?
+  jobTitle    String?
+  employeeId  String?   @unique
+  joinedAt    DateTime?
+  privacyAckAt DateTime?
+  carMake     String?
+  carModel    String?
+  carYear     Int?
+  carPlate    String?
+  bookings    Booking[]
+  transfersOut TransferRequest[] @relation("TransferFrom")
+  transfersIn  TransferRequest[] @relation("TransferTo")
+  createdAt   DateTime  @default(now())
+}
+
+model Booking {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id])
+  stationIdentity String
+  connectorId     Int      @default(1)
+  startAt         DateTime
+  endAt           DateTime
+  status          String   @default("reserved")
+  carPlate        String?
+  carModel        String?
+  transferredFromUserId Int?
+  simulatedSessionId Int?
+  simulatedAt     DateTime?
+  transferRequests TransferRequest[]
+  createdAt       DateTime @default(now())
+}
+
+model BookingRule {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model TransferRequest {
+  id         Int      @id @default(autoincrement())
+  bookingId  Int
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  fromUserId Int
+  fromUser   User     @relation("TransferFrom", fields: [fromUserId], references: [id])
+  toUserId   Int
+  toUser     User     @relation("TransferTo", fields: [toUserId], references: [id])
+  status     String   @default("pending") // pending | accepted | declined | cancelled | expired
+  createdAt  DateTime @default(now())
+  resolvedAt DateTime?
+
+  @@index([toUserId, status])
+  @@index([fromUserId, status])
+  @@index([bookingId])
+}

@@ -1,0 +1,19 @@
+{
+  "name": "charge-point-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OCPP 1.6J charge point simulator for the CSMS hackathon platform",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc",
+    "serve": "node dist/index.js"
+  },
+  "dependencies": {
+    "ocpp-rpc": "file:../ocpp-rpc"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}

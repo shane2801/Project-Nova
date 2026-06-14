@@ -3,7 +3,6 @@ import { getCurrentUser } from "@/lib/session";
 import { ConditionalHeader } from "@/components/ConditionalHeader";
 import { ConditionalMain } from "@/components/ConditionalMain";
 import { TimeMachine } from "@/components/TimeMachine";
-
 export const metadata = { title: "Evolve — Intelligent EV Charging" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -19,6 +18,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className="min-h-screen bg-slate-50 antialiased">
+        
         <ConditionalHeader
           userId={user?.id ?? null}
           userName={user?.name ?? null}

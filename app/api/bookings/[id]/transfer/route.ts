@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-
+import { notify } from "@/lib/notifications";
 const TRANSFER_CUTOFF_MS = 60 * 60 * 1000; // must initiate at least 1h before booking start
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -62,6 +62,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       status: "pending",
     },
   });
-
+await notify({
+  userId: toUserId,
+  type: "transfer_invited",
+  title: "Booking transfer request",
+  body: `${user.name} wants to transfer a ${booking.stationIdentity} booking to you (starts ${booking.startAt.toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })})`,
+  data: {
+    bookingId: booking.id,
+    transferId: tr.id,
+    byUserId: user.id,
+    byUserName: user.name,
+  },
+});
   return Response.json({ ok: true, transferId: tr.id });
 }

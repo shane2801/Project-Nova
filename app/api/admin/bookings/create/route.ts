@@ -2,7 +2,7 @@ import { requireAdmin } from "@/lib/admin-guard";
 import { db } from "@/lib/db";
 import { csmsAuthorizeTag } from "@/lib/csms";
 import { SLOT_START_HOUR, SLOT_END_HOUR } from "@/lib/slots";
-
+import { notify } from "@/lib/notifications";
 export async function POST(req: Request) {
   const admin = await requireAdmin();
 
@@ -138,6 +138,20 @@ export async function POST(req: Request) {
     );
   }
 
+
+await notify({
+  userId: targetUser.id,
+  type: "booking_created_by_admin",
+  title: "An admin booked a slot for you",
+  body: `${admin.name} booked ${stationIdentity} · Connector ${connectorId} · ${startAt.toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })}`,
+  data: {
+    bookingId: booking.id,
+    stationIdentity,
+    connectorId,
+    byUserId: admin.id,
+    byUserName: admin.name,
+  },
+});
   return Response.json({
     ok: true,
     bookingId: booking.id,

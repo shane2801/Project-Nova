@@ -35,7 +35,7 @@ model User {
   chargingSessions ChargingSession[]
   maintenanceBlocks   MaintenanceBlock[] @relation("MaintenanceCreatedBy")
   bookingsCreatedByMe Booking[]          @relation("BookingCreatedByAdmin")
-
+  notifications Notification[]
 }
 
 model Booking {
@@ -127,4 +127,19 @@ model MaintenanceBlock {
 
   @@index([stationIdentity, connectorId, startAt])
   @@index([active])
+}
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // "booking_created" | "booking_cancelled" | "transfer_invited" | "transfer_accepted" | "transfer_declined" | "session_start_soon" | "session_end_soon" | "transfer_cutoff" | "force_stopped" | "admin_user_released" | "admin_user_transferred"
+  title       String
+  body        String
+  data        String?  // JSON blob with bookingId, transferId etc for deep-linking
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
 }

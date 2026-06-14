@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { csmsRevokeTag, csmsAuthorizeTag } from "@/lib/csms";
 import { minutesUsedToday, dailyCapMinutes } from "@/lib/quota";
+import { notify, notifyAllAdmins } from "@/lib/notifications";
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -44,7 +45,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   }
 
   // Swap CSMS auth tag
-  await csmsRevokeTag(tr.fromUser.rfidTag).catch(() => {});
+  await csmsRevokeTag(tr.fromUser.rfidTag).catch(() => { });
   try {
     await csmsAuthorizeTag({
       idTag: user.rfidTag,
@@ -59,7 +60,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       validFrom: tr.booking.startAt,
       validTo: tr.booking.endAt,
       stationIdentity: tr.booking.stationIdentity,
-    }).catch(() => {});
+    }).catch(() => { });
     return Response.json({ error: `CSMS rejected: ${err.message}` }, { status: 502 });
   }
 
@@ -77,6 +78,31 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       data: { status: "accepted", resolvedAt: new Date() },
     }),
   ]);
+  await notify({
+    userId: tr.fromUserId,
+    type: "transfer_accepted",
+    title: "Transfer accepted",
+    body: `${user.name} accepted your ${tr.booking.stationIdentity} booking transfer`,
+    data: {
+      bookingId: tr.bookingId,
+      transferId: tr.id,
+      byUserId: user.id,
+      byUserName: user.name,
+    },
+  });
 
+  await notifyAllAdmins({
+  type: "admin_user_transferred",
+  title: "Booking transferred between users",
+  body: `${tr.booking.stationIdentity} booking moved from previous holder to ${user.name} (${tr.booking.startAt.toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })})`,
+  data: {
+    bookingId: tr.bookingId,
+    transferId: tr.id,
+    stationIdentity: tr.booking.stationIdentity,
+    connectorId: tr.booking.connectorId,
+    byUserId: user.id,
+    byUserName: user.name,
+  },
+});
   return Response.json({ ok: true });
 }

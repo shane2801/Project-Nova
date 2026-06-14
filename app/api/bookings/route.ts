@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { csmsAuthorizeTag } from "@/lib/csms";
 import { SLOT_START_HOUR, SLOT_END_HOUR } from "@/lib/slots";
+import { notify } from "@/lib/notifications";
+
 
 export async function POST(req: Request) {
   const user = await getCurrentUser();
@@ -105,7 +107,13 @@ const booking = await db.booking.create({
       { status: 502 }
     );
   }
-
+await notify({
+  userId: user.id,
+  type: "booking_created",
+  title: "Booking confirmed",
+  body: `${stationIdentity} · Connector ${connectorId} · ${startAt.toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })}`,
+  data: { bookingId: booking.id, stationIdentity, connectorId },
+});
   return Response.json({ ok: true, bookingId: booking.id });
 }
 

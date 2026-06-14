@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Zap } from "lucide-react";
 import { UserSwitcher } from "@/components/UserSwitcher";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const HIDE_ON = ["/login", "/signup"];
 
@@ -37,9 +38,14 @@ export function ConditionalHeader({
           <NavLink href="/availability">Book</NavLink>
           <NavLink href="/my-bookings">My bookings</NavLink>
           {userRole === "admin" && <NavLink href="/admin">Admin</NavLink>}
-          <div className="ml-4 pl-4 border-l border-slate-700">
-            <UserSwitcher currentUserId={userId} currentUserName={userName} />
-          </div>
+{userId && (
+  <div className="ml-2">
+    <NotificationBell />
+  </div>
+)}
+<div className="ml-4 pl-4 border-l border-slate-700">
+  <UserSwitcher currentUserId={userId} currentUserName={userName} />
+</div>
         </div>
       </div>
     </header>

@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { csmsRevokeTag } from "@/lib/csms";
-
+import { notify, notifyAllAdmins } from "@/lib/notifications";
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Not signed in" }, { status: 401 });
@@ -22,6 +22,18 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     data: { status: "released" },
   });
   await csmsRevokeTag(booking.user.rfidTag).catch(() => {});
-
+// Notify all admins
+await notifyAllAdmins({
+  type: "admin_user_released",
+  title: "User released a booking",
+  body: `${user.name} released their ${booking.stationIdentity} booking (${booking.startAt.toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })})`,
+  data: {
+    bookingId: booking.id,
+    stationIdentity: booking.stationIdentity,
+    connectorId: booking.connectorId,
+    byUserId: user.id,
+    byUserName: user.name,
+  },
+});
   return Response.json({ ok: true });
 }

@@ -1,7 +1,7 @@
 import { requireAdmin } from "@/lib/admin-guard";
 import { db } from "@/lib/db";
 import { csmsRevokeTag } from "@/lib/csms";
-
+import { notify } from "@/lib/notifications";
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin();
   const { id } = await params;
@@ -29,7 +29,19 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   } catch (e) {
     console.error("CSMS revoke failed during admin cancel:", e);
   }
-
+  await notify({
+    userId: booking.userId,
+    type: "booking_cancelled_by_admin",
+    title: "Your booking was cancelled",
+    body: `${admin.name} cancelled your ${booking.stationIdentity} booking on ${booking.startAt.toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })}`,
+    data: {
+      bookingId: booking.id,
+      stationIdentity: booking.stationIdentity,
+      connectorId: booking.connectorId,
+      byUserId: admin.id,
+      byUserName: admin.name,
+    },
+  });
   return Response.json({
     ok: true,
     booking: updated,

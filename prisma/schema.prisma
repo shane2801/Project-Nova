@@ -33,6 +33,8 @@ model User {
   transfersIn  TransferRequest[] @relation("TransferTo")
   createdAt   DateTime  @default(now())
   chargingSessions ChargingSession[]
+  maintenanceBlocks   MaintenanceBlock[] @relation("MaintenanceCreatedBy")
+  bookingsCreatedByMe Booking[]          @relation("BookingCreatedByAdmin")
 
 }
 
@@ -52,6 +54,8 @@ model Booking {
   simulatedAt     DateTime?
   transferRequests TransferRequest[]
   createdAt       DateTime @default(now())
+  createdByAdminId Int?
+  createdByAdmin   User? @relation("BookingCreatedByAdmin", fields: [createdByAdminId], references: [id])
 }
 
 model BookingRule {
@@ -106,4 +110,21 @@ model ChargingSession {
   @@index([stationIdentity])
   @@index([carMakeSnap])
   @@index([departmentSnap])
+}
+
+model MaintenanceBlock {
+  id              Int      @id @default(autoincrement())
+  stationIdentity String
+  connectorId     Int
+  startAt         DateTime
+  endAt           DateTime
+  reason          String
+  createdByUserId Int
+  createdBy       User     @relation("MaintenanceCreatedBy", fields: [createdByUserId], references: [id])
+  csmsBlocked     Boolean  @default(false)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@index([stationIdentity, connectorId, startAt])
+  @@index([active])
 }

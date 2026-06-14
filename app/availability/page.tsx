@@ -53,6 +53,20 @@ export default async function AvailabilityPage() {
     orderBy: { startAt: "asc" },
   });
 
+  const todaysBlocks = await db.maintenanceBlock.findMany({
+    where: {
+      active: true,
+      endAt: { gte: startOfDay },
+      startAt: { lt: endOfDay },
+    },
+  });
+
+  const blocksByStation: Record<string, typeof todaysBlocks> = {};
+  for (const b of todaysBlocks) {
+    if (!blocksByStation[b.stationIdentity]) blocksByStation[b.stationIdentity] = [];
+    blocksByStation[b.stationIdentity].push(b);
+  }
+
   // Group by station for fast lookup in each card
   const bookingsByStation: Record<string, typeof todaysBookings> = {};
   for (const b of todaysBookings) {
@@ -122,6 +136,12 @@ export default async function AvailabilityPage() {
                 <SlotPicker
                   stationIdentity={s.identity}
                   bookings={stationBookings}
+                  blocks={(blocksByStation[s.identity] ?? []).map((b) => ({
+                    startAt: b.startAt.toISOString(),
+                    endAt: b.endAt.toISOString(),
+                    connectorId: b.connectorId,
+                    reason: b.reason,
+                  }))}
                   connectors={s.connectors.map((c) => ({
                     connectorId: c.connector_id,
                     status: c.status,

@@ -44,9 +44,25 @@ type MeterValue = {
   unit: string;
 };
 
-type SessionDetail = Session & {
-  meterValues: MeterValue[];
+export type SessionDetail = {
+  id: number;
+  station_identity: string;
+  connector_id: number;
+  id_tag: string;
+  start_time: string;
+  stop_time: string | null;
+  meter_start: number;
+  meter_stop: number | null;
+  energy_wh: number | null;
+  status: string;
+  meter_values: {
+    timestamp: string;
+    measurand: string;
+    value: number;
+    unit: string;
+  }[];
 };
+
 
 export async function csmsSessionDetail(sessionId: number): Promise<SessionDetail | null> {
   const res = await fetch(`${CSMS_BASE}/sessions/${sessionId}`, { cache: "no-store" });
@@ -130,3 +146,4 @@ export async function csmsRemoteStop(identity: string, transactionId: number) {
   if (!res.ok) throw new Error(`CSMS remote-stop failed: ${res.status}`);
   return res.json();
 }
+

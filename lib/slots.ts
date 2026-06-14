@@ -1,4 +1,4 @@
-export type SlotState = "available" | "booked" | "past" | "live";
+export type SlotState = "available" | "booked" | "past" | "live" | "blocked";
 
 export type Slot = {
   hour: number;
@@ -6,10 +6,11 @@ export type Slot = {
   endAt: Date;
   state: SlotState;
   bookedBy?: string;
+  blockReason?: string;
 };
 
-export const SLOT_START_HOUR = 8;
-export const SLOT_END_HOUR = 22;
+export const SLOT_START_HOUR = 0;
+export const SLOT_END_HOUR = 24;
 
 const IN_USE_STATUSES = ["Charging", "Preparing", "Finishing", "SuspendedEVSE", "SuspendedEV"];
 
@@ -21,9 +22,17 @@ type BookingForSlots = {
   user?: { name: string };
 };
 
+type BlockForSlots = {
+  startAt: Date | string;
+  endAt: Date | string;
+  connectorId: number;
+  reason: string;
+};
+
 export function computeSlots(opts: {
   now: Date;
   bookings: BookingForSlots[];
+  blocks?: BlockForSlots[];
   stationIdentity: string;
   connectorId?: number;
   connectorStatus?: string;
@@ -32,10 +41,17 @@ export function computeSlots(opts: {
   const startOfDay = new Date(now);
   startOfDay.setHours(0, 0, 0, 0);
 
-  // Filter to only bookings on the selected connector (if any)
   const relevantBookings = opts.bookings
     .filter((b) => ["reserved", "active"].includes(b.status))
     .filter((b) => connectorId == null || b.connectorId == null || b.connectorId === connectorId)
+    .map((b) => ({
+      ...b,
+      startAt: new Date(b.startAt),
+      endAt: new Date(b.endAt),
+    }));
+
+  const relevantBlocks = (opts.blocks ?? [])
+    .filter((b) => connectorId == null || b.connectorId === connectorId)
     .map((b) => ({
       ...b,
       startAt: new Date(b.startAt),
@@ -56,16 +72,23 @@ export function computeSlots(opts: {
     const booking = relevantBookings.find(
       (b) => b.startAt.getTime() === slotStart.getTime()
     );
+    const block = relevantBlocks.find(
+      (b) => b.startAt < slotEnd && b.endAt > slotStart
+    );
 
     const slotIsNow = now >= slotStart && now < slotEnd;
 
     let state: SlotState;
     let bookedBy: string | undefined;
+    let blockReason: string | undefined;
 
     if (booking) {
       const isLive = now >= booking.startAt && now < booking.endAt;
       state = isLive ? "live" : "booked";
       bookedBy = booking.user?.name;
+    } else if (block) {
+      state = "blocked";
+      blockReason = block.reason;
     } else if (slotIsNow && chargerIsInUseNow) {
       state = "live";
     } else if (slotEnd <= now) {
@@ -74,7 +97,7 @@ export function computeSlots(opts: {
       state = "available";
     }
 
-    slots.push({ hour: h, startAt: slotStart, endAt: slotEnd, state, bookedBy });
+    slots.push({ hour: h, startAt: slotStart, endAt: slotEnd, state, bookedBy, blockReason });
   }
 
   return slots;

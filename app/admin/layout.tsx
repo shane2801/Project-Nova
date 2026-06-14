@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin-guard";
-import { BarChart3, Settings, ClipboardList, Shield } from "lucide-react";
+import { BarChart3, Settings, ClipboardList, Shield, Wrench } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +26,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </AdminTab>
         <AdminTab href="/admin/bookings" icon={<ClipboardList className="w-4 h-4" />}>
           All bookings
+        </AdminTab>
+        <AdminTab href="/admin/override" icon={<Wrench className="w-4 h-4" />}>
+          Override
         </AdminTab>
         <AdminTab href="/admin/rules" icon={<Settings className="w-4 h-4" />}>
           Rules

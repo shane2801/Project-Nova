@@ -19,13 +19,25 @@ type Connector = {
   status: string;
 };
 
+
+type Block = {
+  startAt: string;
+  endAt: string;
+  connectorId: number;
+  reason: string;
+};
+
+
+
 export function SlotPicker({
   stationIdentity,
   bookings,
+  blocks = [],
   connectors,
 }: {
   stationIdentity: string;
   bookings: Booking[];
+  blocks?: Block[];
   connectors: Connector[];
 }) {
   const [now, setNow] = useState<Date | null>(null);
@@ -62,13 +74,14 @@ export function SlotPicker({
   }
 
   const selected = connectors.find((c) => c.connectorId === selectedConnectorId);
-  const slots = computeSlots({
-    now,
-    bookings,
-    stationIdentity,
-    connectorId: selectedConnectorId ?? undefined,
-    connectorStatus: selected?.status,
-  });
+ const slots = computeSlots({
+  now,
+  bookings,
+  blocks,
+  stationIdentity,
+  connectorId: selectedConnectorId ?? undefined,
+  connectorStatus: selected?.status,
+});
   const isFaulted = selected ? ["Faulted", "Unavailable"].includes(selected.status) : false;
 
   async function book(slot: Slot) {
@@ -158,16 +171,18 @@ function SlotChip({
 }) {
   const isAvailable = slot.state === "available" && !disabled;
 
-  const config =
-    slot.state === "live"
-      ? { bg: "bg-blue-100 border-blue-400", text: "text-blue-800" }
-      : slot.state === "booked"
-      ? { bg: "bg-slate-200 border-slate-300", text: "text-slate-500" }
-      : slot.state === "past"
-      ? { bg: "bg-slate-50 border-slate-200", text: "text-slate-300" }
-      : disabled
-      ? { bg: "bg-slate-50 border-slate-200", text: "text-slate-300" }
-      : { bg: "bg-emerald-50 border-emerald-300 hover:bg-emerald-100 cursor-pointer", text: "text-emerald-800" };
+const config =
+  slot.state === "live"
+    ? { bg: "bg-blue-100 border-blue-400", text: "text-blue-800" }
+    : slot.state === "booked"
+    ? { bg: "bg-slate-200 border-slate-300", text: "text-slate-500" }
+    : slot.state === "blocked"
+    ? { bg: "bg-amber-100 border-amber-400 striped", text: "text-amber-800" }
+    : slot.state === "past"
+    ? { bg: "bg-slate-50 border-slate-200", text: "text-slate-300" }
+    : disabled
+    ? { bg: "bg-slate-50 border-slate-200", text: "text-slate-300" }
+    : { bg: "bg-emerald-50 border-emerald-300 hover:bg-emerald-100 cursor-pointer", text: "text-emerald-800" };
 
   const label = `${slot.hour}:00–${slot.hour + 1}:00`;
 
@@ -175,19 +190,21 @@ function SlotChip({
     <button
       onClick={onClick}
       disabled={!isAvailable || loading}
-      title={
-        slot.state === "booked"
-          ? `Booked by ${slot.bookedBy ?? "someone"}`
-          : slot.state === "live"
-          ? slot.bookedBy
-            ? `Charging now — ${slot.bookedBy}`
-            : "Charging now — unbooked session"
-          : slot.state === "past"
-          ? "Past"
-          : isAvailable
-          ? `Book ${slot.hour}:00 – ${slot.hour + 1}:00`
-          : "Unavailable"
-      }
+     title={
+  slot.state === "booked"
+    ? `Booked by ${slot.bookedBy ?? "someone"}`
+    : slot.state === "blocked"
+    ? `Maintenance: ${slot.blockReason ?? "Connector blocked"}`
+    : slot.state === "live"
+    ? slot.bookedBy
+      ? `Charging now — ${slot.bookedBy}`
+      : "Charging now — unbooked session"
+    : slot.state === "past"
+    ? "Past"
+    : isAvailable
+    ? `Book ${slot.hour}:00 – ${slot.hour + 1}:00`
+    : "Unavailable"
+}
       className={`relative h-11 rounded-md border text-[11px] font-semibold transition-colors ${config.bg} ${config.text} ${
         !isAvailable ? "cursor-not-allowed" : ""
       }`}

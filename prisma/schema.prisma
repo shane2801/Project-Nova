@@ -32,6 +32,8 @@ model User {
   transfersOut TransferRequest[] @relation("TransferFrom")
   transfersIn  TransferRequest[] @relation("TransferTo")
   createdAt   DateTime  @default(now())
+  chargingSessions ChargingSession[]
+
 }
 
 model Booking {
@@ -73,4 +75,35 @@ model TransferRequest {
   @@index([toUserId, status])
   @@index([fromUserId, status])
   @@index([bookingId])
+}
+
+model ChargingSession {
+  id              Int      @id @default(autoincrement())
+  csmsSessionId   Int?     @unique  // null for seeded data
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id])
+  stationIdentity String
+  connectorId     Int
+  startTime       DateTime
+  stopTime        DateTime?
+  energyWh        Int      @default(0)
+  durationSec     Int      @default(0)
+  // Denormalized snapshots so changes to user/vehicle later don't rewrite history
+  userNameSnap        String
+  userEmailSnap       String
+  departmentSnap      String?
+  jobTitleSnap        String?
+  employeeIdSnap      String?
+  carMakeSnap         String?
+  carModelSnap        String?
+  carYearSnap         Int?
+  // Marker so we can distinguish real vs seeded data
+  source          String   @default("real") // "real" | "seed"
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([startTime])
+  @@index([stationIdentity])
+  @@index([carMakeSnap])
+  @@index([departmentSnap])
 }
